@@ -204,11 +204,48 @@ sudo systemctl enable --now mi60-fan.service
 
 ## 6. Running AI Workloads
 
-- **Ollama for LLMs**:
-  - Run via Docker with GPU device pass-through:
-    ```bash
-    docker run --rm --device=/dev/kfd --device=/dev/dri -e HSA_OVERRIDE_GFX_VERSION=9.0.6 <image>
-    ```
+### Ollama + OpenWebUI Docker Compose
+
+```yaml
+version: '3.9'
+services:
+  ollama:
+    image: ollama/ollama:0.6.5-rocm
+    container_name: ollama
+    environment:
+      - OLLAMA_ROCM=1
+      - HSA_OVERRIDE_GFX_VERSION=9.0.0
+      - ROCR_VISIBLE_DEVICES=0
+      - HIP_VISIBLE_DEVICES=0
+      - OLLAMA_HOST=0.0.0.0:11434
+    ports:
+      - "11434:11434"
+    volumes:
+      - ./ollama:/root/.ollama
+    devices:
+      - /dev/kfd
+      - /dev/dri
+    group_add:
+      - video
+    restart: unless-stopped
+
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: open-webui
+    depends_on:
+      - ollama
+    environment:
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - ENV=prod
+      - PORT=8080
+      - SCARF_NO_ANALYTICS=true
+      - DO_NOT_TRACK=true
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+```
+
+### Other Workloads
 - **Whisper.cpp**:
   - Compile with OpenCL backend and CLBlast for performance.
 - **PyTorch ROCm Installation**:
