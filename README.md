@@ -10,7 +10,7 @@ The AMD Instinct MI60 is a powerful server GPU featuring 32 GB of HBM2 VRAM and 
 | --------------------- | -------------- | ------------------------- |
 | AMD Instinct MI60 GPU | 32GB HBM2 VRAM | Passive-cooled server GPU |
 | **92mm x 38mm Fan**       | High static pressure, 12V, PWM or 3-pin | Example: GDSTIME 92x38mm fan. Needed to force air through MI60's dense heatsink                                         |
-| Fan Mounting              | Zip ties, screws, or 3D printed shroud  | A shroud ensures airflow stays directed through the heatsink. [Download STL](https://www.thingiverse.com/thing:6636428) |
+| Fan Mounting              | 3D printed shroud                          | A shroud ensures airflow stays directed through the heatsink. [Download STL](https://www.thingiverse.com/thing:6636428) |
 | High Wattage PSU          | 600W+ with 2x 8-pin PCIe                | MI60 can draw 300W under AI workloads                                                                                   |
 
 > **Tip**: Look for "**92mm x 38mm high static pressure fan**" on Amazon or eBay. GDSTIME, Delta, and Sunon are common brands. Some models can be loud — use PWM or undervolting to reduce noise.
@@ -29,40 +29,58 @@ for the GPU.
 To ensure the MI60 initializes properly and operates with maximum stability, adjust these BIOS settings:
 
 - **Above 4G Decoding**: `Enabled`
-  - Required for proper BAR mapping and ROCm support.
+
+    - Required for proper BAR mapping and ROCm support.
+
 - **Resizable BAR**: `Disabled`
-  - ROCm does not benefit and may break compatibility with some MI-series cards.
+
+    - ROCm does not benefit and may break compatibility with some MI-series cards.
+
 - **PCIe Link Speed**: `Auto` or `Gen 3`
-  - The MI60 is a PCIe 3.0 card. Setting Gen 4 may work but is unnecessary.
+
+    - The MI60 is a PCIe 3.0 card. Setting Gen 4 may work but is unnecessary.
+
 - **CSM (Compatibility Support Module)**: `Disabled`
-  - Use UEFI boot mode for best compatibility with modern Linux distros and ROCm.
+
+    - Use UEFI boot mode for best compatibility with modern Linux distros and ROCm.
+
 - **Integrated Graphics**: `Disabled` (if not needed)
-  - Frees up resources and avoids conflicts.
+
+    - Frees up resources and avoids conflicts.
+
 - **Primary GPU**: Set to `PCIe Slot` or `PEG`
-  - Ensures the MI60 is initialized at boot.
+
+    - Ensures the MI60 is initialized at boot.
 
 - **Motherboards**:
-  - PCIe 4.0 not strictly required (works well on PCIe 3.0 platforms)
-  - Tested platforms: X570, B550, TRX40
+
+    - PCIe 4.0 not strictly required (works well on PCIe 3.0 platforms)
+    - Tested platforms: X570, B550, TRX40
+
 - **Power Supply**:
-  - Expect \~300W power draw under load
-  - Requires two 8-pin PCIe power connectors
+
+    - Expect \~300W power draw under load
+    - Requires two 8-pin PCIe power connectors
+
 - **Cooling Requirements**:
-  - Passive GPU (no built-in fan)
-  - Requires external fan for reliable cooling
+
+    - Passive GPU (no built-in fan)
+    - Requires external fan for reliable cooling
+
 - **Physical Space**:
-  - Double-slot width
-  - Ensure good airflow around the card
+
+    - Double-slot width
+    - Ensure good airflow around the card
 
 ## 3. Software Stack Overview
 
 - **Operating System**: Ubuntu 22.04 LTS or Linux Mint 21.x
 - **Driver Stack**: ROCm 5.6 (newer versions dropped MI60 support)
 - **AI Frameworks**:
-  - PyTorch ROCm build
-  - Whisper.cpp (with OpenCL backend)
-  - Stable Diffusion (optimized for FP32)
-  - Ollama for local LLM inference
+    - PyTorch ROCm build
+    - Whisper.cpp (with OpenCL backend)
+    - Stable Diffusion (optimized for FP32)
+    - Ollama for local LLM inference
 
 ## 4. Verifying ROCm Installation
 
@@ -75,21 +93,18 @@ To ensure the MI60 initializes properly and operates with maximum stability, adj
   /opt/rocm/bin/hipInfo
   ```
 - Troubleshooting:
-  - Kernel versions 5.15 or 6.2 are recommended.
-  - Ensure `/dev/kfd` exists and that your user belongs to the `video` group.
-  - Stick to ROCm 5.6 to maintain compatibility.
+    - Kernel versions 5.15 or 6.2 are recommended.
+    - Ensure `/dev/kfd` exists and that your user belongs to the `video` group.
+    - Stick to ROCm 5.6 to maintain compatibility.
 
 ## 5. Cooling and Fan Control Setup
 
 ### Physical Setup
 
-- Mount a 92mm x 38mm fan (e.g., GDSTIME) directly onto the MI60 heatsink.
-- Options:
-  - 3D printed bracket
-  - Zip ties with rubber spacers for vibration isolation
+- Mount a 92mm x 38mm fan (e.g., GDSTIME) directly onto the MI60 heatsink using a 3D printed bracket.
 - Connect the fan to:
-  - Motherboard CHA\_FAN or SYS\_FAN header
-  - Or use an external powered fan hub
+    - Motherboard CHA\_FAN or SYS\_FAN header
+    - Or use an external powered fan hub
 
 ### Software Fan Control
 
@@ -175,7 +190,7 @@ sudo systemctl enable --now mi60-fan.service
    sudo sensors-detect
    ```
 
-   - Answer "yes" to all prompts.
+    - Answer "yes" to all prompts.
 
 3. View sensor output:
 
@@ -183,7 +198,7 @@ sudo systemctl enable --now mi60-fan.service
    sensors
    ```
 
-   - Identify the relevant temperature inputs (usually motherboard CPU or system temp).
+    - Identify the relevant temperature inputs (usually motherboard CPU or system temp).
 
 4. Configure PWM fan control:
 
@@ -191,7 +206,7 @@ sudo systemctl enable --now mi60-fan.service
    sudo pwmconfig
    ```
 
-   - Follow the prompts to associate PWM outputs with temperature inputs.
+    - Follow the prompts to associate PWM outputs with temperature inputs.
 
 5. Enable fancontrol service:
 
@@ -204,10 +219,13 @@ sudo systemctl enable --now mi60-fan.service
 
 ## 6. Running AI Workloads
 
-### Ollama + OpenWebUI Docker Compose
+### Ollama + Open WebUI (with ROCm and MI60)
+
+You can run Ollama with MI60 using the ROCm-enabled container provided by the project. Here's an example `docker-compose.yaml` that works well:
 
 ```yaml
 version: '3.9'
+
 services:
   ollama:
     image: ollama/ollama:0.6.5-rocm
@@ -245,15 +263,25 @@ services:
     restart: unless-stopped
 ```
 
-### Other Workloads
+> **Notes:**
+>
+> - Be sure to use the `--device=/dev/kfd --device=/dev/dri` options to pass GPU access into the container.
+> - `HSA_OVERRIDE_GFX_VERSION=9.0.0` ensures Ollama initializes properly with Vega 20 architecture (MI60).
+> - You may want to add `group_add: [video]` to ensure proper access rights inside the container.
+> - Logs and models will be stored in `./ollama` relative to where you launch Docker.
+
+Once running, Open WebUI will be accessible at [http://localhost:8080](http://localhost:8080) and Ollama at port `11434`.
+
+---
+
 - **Whisper.cpp**:
-  - Compile with OpenCL backend and CLBlast for performance.
+    - Compile with OpenCL backend and CLBlast for performance.
 - **PyTorch ROCm Installation**:
   ```bash
   pip install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/rocm5.6
   ```
 - **Stable Diffusion**:
-  - Use `--precision full` and `--no-half` flags to avoid issues with FP16 unsupported operations.
+    - Use `--precision full` and `--no-half` flags to avoid issues with FP16 unsupported operations.
 
 ## 7. Known Issues and Workarounds
 
