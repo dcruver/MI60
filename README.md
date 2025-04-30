@@ -1,8 +1,28 @@
 # 🖥️ How to Get an AMD Instinct MI60 Running for AI Workloads
 
+## Table of Contents
+
+1. [Introduction](#1-introduction)
+2. [Parts List](#-parts-list)
+3. [Photos](#-photos)
+4. [Hardware and Compatibility Checklist](#2-hardware-and-compatibility-checklist)
+5. [Software Stack Overview](#3-software-stack-overview)
+6. [Verifying ROCm Installation](#4-verifying-rocm-installation)
+7. [Cooling and Fan Control Setup](#5-cooling-and-fan-control-setup)
+8. [Running AI Workloads](#6-running-ai-workloads)
+    - [Whisper.cpp and Stable Diffusion Notes](#6-running-ai-workloads)
+    - [Ollama + Open WebUI](#ollama--open-webui-with-rocm-and-mi60)
+9. [Benchmarks](#7-benchmarks)
+    - [Benchmarking Token Generation Rate](#benchmarking-token-generation-rate)
+    - [Benchmark Results](#benchmark-results)
+10. [Known Issues and Workarounds](#8-known-issues-and-workarounds)
+11. [Final Notes](#9-final-notes)
+
 ## 1. Introduction
 
-The AMD Instinct MI60 is a powerful server GPU featuring 32 GB of HBM2 VRAM and PCIe 3.0 connectivity. It remains an excellent choice for budget-conscious AI developers looking for high VRAM capacity at a fraction of modern GPU prices. With proper setup, the MI60 can handle local LLM inference, Whisper transcription, Stable Diffusion, and other heavy workloads.
+The AMD Instinct MI60 is a powerful server GPU featuring 32 GB of HBM2 VRAM and PCIe 3.0 connectivity. It remains a 
+good choice for budget-conscious AI developers looking for high VRAM capacity at a fraction of modern GPU prices. With 
+proper setup, the MI60 can handle local LLM inference, Whisper transcription, Stable Diffusion, and other workloads.
 
 ## 🛠 Parts List
 
@@ -17,10 +37,10 @@ The AMD Instinct MI60 is a powerful server GPU featuring 32 GB of HBM2 VRAM and 
 
 ## 📸 Photos
 
-MI60 with 92mm GDSTIME fan attached using printed shroud. The 3D-printed fan housing also doubles as a physical support 
-for the GPU.
-![Fan Mount](images/MI60-fan-housing1.jpg) 
+MI60 with 92mm GDSTIME fan attached using a 3D-printed shroud. The 3D-printed fan housing also doubles as a physical 
+support for the GPU.
 
+<img src="images/MI60-fan-housing1.jpg" alt="Fan Mount" width="500"/>
 
 ## 2. Hardware and Compatibility Checklist
 
@@ -76,11 +96,6 @@ To ensure the MI60 initializes properly and operates with maximum stability, adj
 
 - **Operating System**: Ubuntu 22.04 LTS or Linux Mint 21.x
 - **Driver Stack**: ROCm 5.6 (newer versions dropped MI60 support)
-- **AI Frameworks**:
-    - PyTorch ROCm build
-    - Whisper.cpp (with OpenCL backend)
-    - Stable Diffusion (optimized for FP32)
-    - Ollama for local LLM inference
 
 ## 4. Verifying ROCm Installation
 
@@ -111,39 +126,12 @@ To ensure the MI60 initializes properly and operates with maximum stability, adj
 You can automate fan behavior using a custom script and systemd service.
 
 #### Example Fan Control Script
+[This](scripts/mi60-fan.sh) is the fan control script that I'm using. Depending on your motherboard and which fan control header you're using,
+you may need to modify the value of PWM_PATH and PWM_ENABLE_PATH. Further, depending on the output of your particular
+fan, you may want to change the values for MIN_PWM, MAX_PWM, MIN_TEMP, MAX_TEMP, UTIL_THRESH and/or BOOST_PWM. The
+values in the script should work reasonably well as a starting point.
 
-Create a script at `/usr/local/bin/mi60-fan.sh`:
-
-```bash
-#!/bin/bash
-# Adjust this path to your system's PWM control and temperature sensor
-FAN_PATH="/sys/class/hwmon/hwmon2/pwm1"
-TEMP_PATH="/sys/class/hwmon/hwmon2/temp1_input"
-
-# Temperature thresholds (°C)
-MIN_TEMP=35
-MAX_TEMP=70
-
-# PWM range: 0-255
-MIN_PWM=50
-MAX_PWM=255
-
-while true; do
-    temp_raw=$(cat "$TEMP_PATH")
-    temp_c=$((temp_raw / 1000))
-
-    if (( temp_c <= MIN_TEMP )); then
-        pwm=$MIN_PWM
-    elif (( temp_c >= MAX_TEMP )); then
-        pwm=$MAX_PWM
-    else
-        pwm=$((MIN_PWM + (MAX_PWM - MIN_PWM) * (temp_c - MIN_TEMP) / (MAX_TEMP - MIN_TEMP)))
-    fi
-
-    echo $pwm > "$FAN_PATH"
-    sleep 5
-done
-```
+Save the script at `/usr/local/bin/mi60-fan.sh`
 
 Make it executable:
 
@@ -153,21 +141,7 @@ sudo chmod +x /usr/local/bin/mi60-fan.sh
 
 #### Create a systemd Service
 
-Create `/etc/systemd/system/mi60-fan.service`:
-
-```ini
-[Unit]
-Description=MI60 Fan Control Service
-After=multi-user.target
-
-[Service]
-ExecStart=/usr/local/bin/mi60-fan.sh
-Restart=always
-User=root
-
-[Install]
-WantedBy=multi-user.target
-```
+Create [mi60-fan.service](scripts/mi60-fan.service) in `/etc/systemd/system/`
 
 Enable and start the service:
 
@@ -218,50 +192,19 @@ sudo systemctl enable --now mi60-fan.service
 > **Tip**: If your motherboard does not expose fine PWM controls, set a BIOS fan curve instead.
 
 ## 6. Running AI Workloads
+Before diving in, it’s worth noting a couple of tools that may require more effort to get working:
+
++ **Whisper.cpp**: I was unable to get whisper.cpp running on the GPU — it consistently fell back to CPU despite being 
+built with OpenCL support. It's likely possible; I just haven’t found the right incantation yet.
+
++ **Stable Diffusion**: In my testing, attempting to run Stable Diffusion caused the GPU to become unresponsive until 
+reboot. This may be solvable with additional configuration or a more ROCm-compatible fork, but I haven’t resolved it yet.
+
 
 ### Ollama + Open WebUI (with ROCm and MI60)
 
-You can run Ollama with MI60 using the ROCm-enabled container provided by the project. Here's an example `docker-compose.yaml` that works well:
+You can run Ollama with MI60 using the ROCm-enabled container provided by the project. 
 
-```yaml
-version: '3.9'
-
-services:
-  ollama:
-    image: ollama/ollama:0.6.5-rocm
-    container_name: ollama
-    environment:
-      - OLLAMA_ROCM=1
-      - HSA_OVERRIDE_GFX_VERSION=9.0.0
-      - ROCR_VISIBLE_DEVICES=0
-      - HIP_VISIBLE_DEVICES=0
-      - OLLAMA_HOST=0.0.0.0:11434
-    ports:
-      - "11434:11434"
-    volumes:
-      - ./ollama:/root/.ollama
-    devices:
-      - /dev/kfd
-      - /dev/dri
-    group_add:
-      - video
-    restart: unless-stopped
-
-  open-webui:
-    image: ghcr.io/open-webui/open-webui:main
-    container_name: open-webui
-    depends_on:
-      - ollama
-    environment:
-      - OLLAMA_BASE_URL=http://ollama:11434
-      - ENV=prod
-      - PORT=8080
-      - SCARF_NO_ANALYTICS=true
-      - DO_NOT_TRACK=true
-    ports:
-      - "8080:8080"
-    restart: unless-stopped
-```
 
 > **Notes:**
 >
@@ -272,32 +215,52 @@ services:
 
 Once running, Open WebUI will be accessible at [http://localhost:8080](http://localhost:8080) and Ollama at port `11434`.
 
----
 
-- **Whisper.cpp**:
-    - Compile with OpenCL backend and CLBlast for performance.
-- **PyTorch ROCm Installation**:
-  ```bash
-  pip install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/rocm5.6
-  ```
-- **Stable Diffusion**:
-    - Use `--precision full` and `--no-half` flags to avoid issues with FP16 unsupported operations.
+## 7. Benchmarks
+### Benchmarking Token Generation Rate
+You can use [this](scripts/benchmark_ollama.sh) script below to benchmark Ollama's token generation speed via the HTTP 
+API.
 
-## 7. Known Issues and Workarounds
+Make it executable:
+```bash
+chmod +x benchmark_ollama.sh
+```
 
+Then run:
+```bash
+./benchmark_ollama.sh
+```
+
+Each run will append the results to ollama_benchmark.log for later comparison.
+
+### Benchmark Results
+These are the results that I saw on my local machine. GPU temperatures never exceeded 73°C.
+
+| Model            | Tokens/sec | Notes               |
+|------------------|------------|---------------------|
+| Qwen2.5 Coder 32B | 15.13     | Avg of 5 runs, ~70°C       |
+| Qwen2.5 7B       | 57.40      | Avg of 5 runs, same prompt   |
+
+
+
+## 8. Known Issues and Workarounds
+
+Section 8: Known Issues and Workarounds (modified bullet list)
 - ROCm 6.x+ drops MI60 support (stick with 5.6).
 - Docker containers require manual device mapping.
 - MI60 lacks native FP16 acceleration; full precision FP32 models perform better.
-- Thermal throttling can occur without adequate cooling.
+- Whisper.cpp falls back to CPU — GPU support might work with the right OpenCL build setup, but it’s not functioning 
+yet in my tests.
+- Stable Diffusion causes GPU lockups — system becomes unresponsive until reboot. This may be solvable but remains 
+unresolved.
 
-## 8. Final Notes
+## 9. Final Notes
 
-- The MI60 is an outstanding choice for affordable local AI compute.
+- The MI60 is a good choice for affordable local AI compute.
 - Proper cooling setup is critical to stable operation.
-- With ROCm 5.6, Linux, and some tuning, the MI60 remains highly relevant for demanding AI workloads.
+- With ROCm 5.6, Linux, and some tuning, the MI60 remains usable for AI workloads.
 
 ---
 
-Feel free to submit issues or pull requests if you find other optimizations or tips for getting the most out of your MI60!
 
 

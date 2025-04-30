@@ -1,0 +1,10 @@
+2025-04-30T07:42:33-06:00 | qwen2.5-coder:32b | 866 tokens | 57.55 sec | 15.05 tokens/sec
+2025-04-30T07:43:25-06:00 | qwen2.5-coder:32b | 571 tokens | 37.49 sec | 15.23 tokens/sec
+2025-04-30T07:44:03-06:00 | qwen2.5-coder:32b | 519 tokens | 34.08 sec | 15.23 tokens/sec
+2025-04-30T07:44:56-06:00 | qwen2.5-coder:32b | 729 tokens | 48.49 sec | 15.03 tokens/sec
+2025-04-30T07:46:00-06:00 | qwen2.5-coder:32b | 649 tokens | 42.89 sec | 15.13 tokens/sec
+2025-04-30T07:59:04-06:00 | qwen2.5:7b | 648 tokens | 11.38 sec | 56.94 tokens/sec
+2025-04-30T07:59:19-06:00 | qwen2.5:7b | 678 tokens | 11.76 sec | 57.65 tokens/sec
+2025-04-30T07:59:31-06:00 | qwen2.5:7b | 546 tokens | 9.39 sec | 58.15 tokens/sec
+2025-04-30T07:59:42-06:00 | qwen2.5:7b | 486 tokens | 8.37 sec | 58.06 tokens/sec
+2025-04-30T07:59:56-06:00 | qwen2.5:7b | 724 tokens | 12.66 sec | 57.19 tokens/sec

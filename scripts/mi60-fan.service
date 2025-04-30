@@ -1,0 +1,11 @@
+[Unit]
+Description=MI60 Fan Control Service
+After=multi-user.target
+
+[Service]
+ExecStart=/usr/local/bin/mi60-fan.sh
+Restart=always
+User=root
+
+[Install]
+WantedBy=multi-user.target
