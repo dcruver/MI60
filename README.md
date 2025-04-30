@@ -1,4 +1,4 @@
-# 🖥️ How to Get an AMD Instinct MI60 Running for AI Workloads
+# How to Get an AMD Instinct MI60 Running for AI Workloads
 
 ## Table of Contents
 
@@ -35,7 +35,7 @@ proper setup, the MI60 can handle local LLM inference, Whisper transcription, St
 
 > **Tip**: Look for "**92mm x 38mm high static pressure fan**" on Amazon or eBay. GDSTIME, Delta, and Sunon are common brands. Some models can be loud — use PWM or undervolting to reduce noise.
 
-## 📸 Photos
+## Photos
 
 MI60 with 92mm GDSTIME fan attached using a 3D-printed shroud. The 3D-printed fan housing also doubles as a physical 
 support for the GPU.
