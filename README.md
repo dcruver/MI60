@@ -236,10 +236,13 @@ Each run will append the results to ollama_benchmark.log for later comparison.
 ### Benchmark Results
 These are the results that I saw on my local machine. GPU temperatures never exceeded 73°C.
 
-| Model            | Tokens/sec | Notes               |
-|------------------|------------|---------------------|
-| Qwen2.5 Coder 32B | 15.13     | Avg of 5 runs, ~70°C       |
-| Qwen2.5 7B       | 57.40      | Avg of 5 runs, same prompt   |
+| Model             | Tokens/sec    | temperature |
+|-------------------|---------------|-------------|
+| qwen2.5-coder:32B | 15.13         | ~70°C       |
+| qwen2.5:8b        | 57.40         | ~60°C       |
+| qwen3:8b          | 46.61         | ~60°C       |
+| qwen3:30b         | 29.86         | ~65°C       |
+| qwen3:32b         | 14.06         | ~73°C       |
 
 
 

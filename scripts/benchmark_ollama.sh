@@ -1,13 +1,16 @@
 #!/bin/bash
 
-MODEL="qwq"
-PROMPT="Tell me a story about a robot dog."
+MODEL="${MODEL:-qwq}"
+PROMPT="${PROMPT:-Tell me a story about a robot dog.}"
 LOGFILE="ollama_benchmark.log"
 
 echo "Benchmarking model: $MODEL"
 echo "Prompt: \"$PROMPT\""
 
-# Run the prompt and capture JSON response
+# Pull model inside the container
+echo "Pulling model inside Docker container..."
+docker exec ollama ollama pull "$MODEL"
+
 RESPONSE=$(curl -s http://localhost:11434/api/generate -d "{
   \"model\": \"$MODEL\",
   \"prompt\": \"$PROMPT\",
