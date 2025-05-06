@@ -1,0 +1,6 @@
+transformers
+peft
+datasets
+pandas
+scipy
+gguf
