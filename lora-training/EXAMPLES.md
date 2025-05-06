@@ -22,11 +22,11 @@ make build
 ### 2. Train the LoRA adapter
 
 ```bash
-make train DATASET_NAME=mlabonne/guanaco-llama2-1k
+make train DATASET_NAME=dcruver/keip-assistant-dataset
 ```
 
 This command:
-- Uses the dataset "mlabonne/guanaco-llama2-1k" from Hugging Face
+- Uses the dataset "dcruver/keip-assistant-dataset" from Hugging Face
 - Uses the default model (Qwen/Qwen3-8B)
 - Saves the LoRA adapter to `./lora-adapters`
 

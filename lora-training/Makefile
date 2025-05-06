@@ -8,6 +8,7 @@ GGUF_REPO_ID ?=
 GGUF_QUANTIZATION ?= q4_k_m
 GGUF_OUTPUT_NAME ?= 
 HF_TOKEN ?= $(shell cat ~/.huggingface/token 2>/dev/null)
+ROLE_PROMPT_FILE ?= /workspace/role_prompt.txt
 
 # Docker run command with common options
 DOCKER_RUN = docker run --rm -it --shm-size=8g --device=/dev/kfd --device=/dev/dri \
@@ -76,6 +77,7 @@ build:
 # Train LoRA adapter
 train: check-dataset
 	$(DOCKER_RUN) -e MODEL_NAME=$(MODEL_NAME) -e DATASET_NAME=$(DATASET_NAME) \
+	-e ROLE_PROMPT_FILE=$(ROLE_PROMPT_FILE) \
 	lora-rocm train
 
 # Merge LoRA with base model

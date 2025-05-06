@@ -114,6 +114,10 @@ def train_model(args):
     optimizer = torch.optim.AdamW(model.parameters(), lr=args.learning_rate)
 
     # === Training loop ===
+    prev_loss = float('inf')
+    best_loss = float('inf')
+    no_improvement_count = 0
+    
     for epoch in range(args.num_epochs):
         print(f"Epoch {epoch + 1}")
         total_loss = 0
@@ -125,7 +129,35 @@ def train_model(args):
             optimizer.step()
             optimizer.zero_grad()
             total_loss += loss.item()
-        print(f"Epoch loss: {total_loss:.4f}")
+        
+        # Calculate average loss per batch for reporting
+        avg_loss = total_loss / len(dataloader)
+        print(f"Epoch loss: {total_loss:.4f} (avg per batch: {avg_loss:.4f})")
+        
+        # Save best model if specified
+        if args.save_best_model and total_loss < best_loss:
+            best_loss = total_loss
+            model.save_pretrained(f"{args.lora_output_dir}_best")
+            print(f"✅ Best model so far saved to {args.lora_output_dir}_best")
+        
+        # Check if loss is below threshold
+        if total_loss < args.early_stop_threshold:
+            print(f"Loss {total_loss:.4f} is below threshold {args.early_stop_threshold:.4f}. Stopping early.")
+            break
+            
+        # Check for minimal improvement (convergence)
+        if prev_loss != float('inf'):
+            loss_improvement = (prev_loss - total_loss) / prev_loss
+            if loss_improvement < args.min_improvement:
+                no_improvement_count += 1
+                print(f"Loss improvement ({loss_improvement:.4f}) below minimum threshold ({args.min_improvement:.4f}). Patience: {no_improvement_count}/{args.patience}")
+                if no_improvement_count >= args.patience:
+                    print(f"No significant improvement for {args.patience} epochs. Stopping early.")
+                    break
+            else:
+                no_improvement_count = 0  # Reset counter if we have sufficient improvement
+                
+        prev_loss = total_loss
 
     # === Save adapter ===
     model.save_pretrained(args.lora_output_dir)
@@ -157,6 +189,14 @@ if __name__ == "__main__":
                         help="LoRA dropout parameter")
     parser.add_argument("--target_modules", type=str, default="q_proj,v_proj", 
                         help="Comma-separated list of target modules for LoRA")
+    parser.add_argument("--early_stop_threshold", type=float, default=25.0, 
+                        help="Stop training when loss falls below this threshold")
+    parser.add_argument("--min_improvement", type=float, default=0.01, 
+                        help="Minimum proportional improvement in loss to continue training")
+    parser.add_argument("--patience", type=int, default=2, 
+                        help="Number of epochs with minimal improvement before stopping")
+    parser.add_argument("--save_best_model", action="store_true", 
+                        help="Save the best model based on lowest loss")
     
     args = parser.parse_args()
     train_model(args)
