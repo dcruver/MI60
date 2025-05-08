@@ -80,7 +80,7 @@ def train_model(args):
     )
 
     # === Tokenizer ===
-    tokenizer = AutoTokenizer.from_pretrained(args.model_name, trust_remote_code=True, token=args.hf_token)
+    tokenizer = AutoTokenizer.from_pretrained(args.model_name, trust_remote_code=True)
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
 

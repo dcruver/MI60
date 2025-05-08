@@ -41,7 +41,7 @@ show_help() {
   echo "  GGUF_OUTPUT_NAME - Custom filename for the GGUF model (default: uses model name)"
   echo "  HF_REPO_ID      - HuggingFace repository ID for merged model (required for push)"
   echo "  GGUF_REPO_ID    - HuggingFace repository ID for GGUF model (required for push-gguf)"
-  echo "  HF_TOKEN        - HuggingFace API token (required for push and push-gguf, and for gated models)"
+  echo "  HF_TOKEN        - HuggingFace API token (required for push and push-gguf)"
   echo ""
   echo "Example usage:"
   echo "  docker run --rm -it --device=/dev/kfd --device=/dev/dri --shm-size=8g \\"

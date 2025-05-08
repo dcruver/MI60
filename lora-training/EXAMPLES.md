@@ -7,6 +7,12 @@ This guide provides step-by-step examples for training LoRA adapters on your AMD
 - AMD MI60 GPU with ROCm drivers installed (see [main README](../README.md))
 - Docker installed on your system
 - Hugging Face account (if you want to push models)
+## Prerequisites
+
+- AMD MI60 GPU with ROCm drivers installed (see [main README](../README.md))
+- Docker installed on your system
+- Hugging Face account (if you want to push models)
+
 
 ## Basic Training Example
 
@@ -40,6 +46,7 @@ This command:
 - Takes the LoRA adapter from `./lora-adapters`
 - Merges it with the base model
 - Saves the merged model to `./lora-merged`
+
 
 ### 4. Convert the merged model to GGUF format
 
