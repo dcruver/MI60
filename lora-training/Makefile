@@ -77,8 +77,9 @@ build:
 # Train LoRA adapter
 train: check-dataset
 	$(DOCKER_RUN) -e MODEL_NAME=$(MODEL_NAME) -e DATASET_NAME=$(DATASET_NAME) \
-	-e ROLE_PROMPT_FILE=$(ROLE_PROMPT_FILE) \
-	lora-rocm train
+        -e PYTORCH_HIP_ALLOC_CONF=expandable_segments:True \
+	-e ROLE_PROMPT_FILE=$(ROLE_PROMPT_FILE) -e HF_TOKEN=$(HF_TOKEN) \
+        lora-rocm train --batch_size 1 --max_length 128
 
 # Merge LoRA with base model
 merge:

@@ -2,8 +2,18 @@
 import argparse
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from peft import PeftModel
+from huggingface_hub import login
 
 def merge_model(args):
+    # Check for HuggingFace token and login if provided
+    if args.hf_token:
+        print("HF token provided. Logging in to Hugging Face...")
+        login(token=args.hf_token)
+        print("Successfully logged in to Hugging Face")
+    else:
+        print("Warning: No HF token provided. You may not be able to access gated models like Mistral.")
+        print("Use the --hf_token parameter if needed.")
+
     print(f"Loading base model: {args.model_name}")
     # Load base model
     base_model = AutoModelForCausalLM.from_pretrained(
@@ -32,6 +42,8 @@ if __name__ == "__main__":
                         help="Directory containing the LoRA adapter")
     parser.add_argument("--output_dir", type=str, default="./lora-merged", 
                         help="Directory to save the merged model")
+    parser.add_argument("--hf_token", type=str, default=None,
+                        help="Hugging Face token for accessing gated models")
     
     args = parser.parse_args()
     merge_model(args)

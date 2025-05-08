@@ -41,7 +41,7 @@ show_help() {
   echo "  GGUF_OUTPUT_NAME - Custom filename for the GGUF model (default: uses model name)"
   echo "  HF_REPO_ID      - HuggingFace repository ID for merged model (required for push)"
   echo "  GGUF_REPO_ID    - HuggingFace repository ID for GGUF model (required for push-gguf)"
-  echo "  HF_TOKEN        - HuggingFace API token (required for push and push-gguf)"
+  echo "  HF_TOKEN        - HuggingFace API token (required for push and push-gguf, and for gated models)"
   echo ""
   echo "Example usage:"
   echo "  docker run --rm -it --device=/dev/kfd --device=/dev/dri --shm-size=8g \\"
@@ -67,10 +67,20 @@ run_train() {
     role_prompt_arg="--role_prompt_file $ROLE_PROMPT_FILE"
   fi
   
+  # Prepare HF_TOKEN argument
+  hf_token_arg=""
+  if [ -n "$HF_TOKEN" ]; then
+    echo "HF token is provided, will use for authentication"
+    hf_token_arg="--hf_token $HF_TOKEN"
+  else
+    echo "Warning: HF_TOKEN not provided. Access to gated models like Mistral may fail."
+  fi
+
   python3 /usr/local/bin/train_lora.py \
     --model_name "$MODEL_NAME" \
     --dataset_name "$DATASET_NAME" \
     $role_prompt_arg \
+    $hf_token_arg \
     --lora_output_dir "$LORA_DIR" \
     "$@"
 }
@@ -78,10 +88,21 @@ run_train() {
 # Function to merge LoRA with base model
 run_merge() {
   echo "Merging LoRA adapter with base model..."
+
+  # Prepare HF_TOKEN argument
+  hf_token_arg=""
+  if [ -n "$HF_TOKEN" ]; then
+    echo "HF token is provided, will use for authentication"
+    hf_token_arg="--hf_token $HF_TOKEN"
+  else
+    echo "Warning: HF_TOKEN not provided. Access to gated models like Mistral may fail."
+  fi
+
   python3 /usr/local/bin/merge_lora.py \
     --model_name "$MODEL_NAME" \
     --lora_dir "$LORA_DIR" \
     --output_dir "$MERGED_DIR" \
+    $hf_token_arg \
     "$@"
 }
 

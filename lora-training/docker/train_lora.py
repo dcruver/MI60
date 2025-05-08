@@ -2,14 +2,25 @@
 import torch
 import csv
 import argparse
+import os
 from datasets import load_dataset
 from transformers import AutoTokenizer, AutoModelForCausalLM
 from peft import LoraConfig, get_peft_model, TaskType
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 from transformers import default_data_collator
+from huggingface_hub import login
 
 def train_model(args):
+    # Check for HuggingFace token and login if provided
+    if args.hf_token:
+        print("HF token provided. Logging in to Hugging Face...")
+        login(token=args.hf_token)
+        print("Successfully logged in to Hugging Face")
+    else:
+        print("Warning: No HF token provided. You may not be able to access gated models like Mistral.")
+        print("Use the --hf_token parameter if needed.")
+
     # Read role prompt from a file if provided
     ROLE_PROMPT = ""
     if args.role_prompt_file:
@@ -69,7 +80,7 @@ def train_model(args):
     )
 
     # === Tokenizer ===
-    tokenizer = AutoTokenizer.from_pretrained(args.model_name, trust_remote_code=True)
+    tokenizer = AutoTokenizer.from_pretrained(args.model_name, trust_remote_code=True, token=args.hf_token)
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
 
@@ -90,7 +101,8 @@ def train_model(args):
     base_model = AutoModelForCausalLM.from_pretrained(
         args.model_name,
         trust_remote_code=True,
-        torch_dtype=torch.bfloat16
+        torch_dtype=torch.bfloat16,
+        token=args.hf_token
     )
     base_model = base_model.to("cuda")
 
@@ -173,7 +185,9 @@ if __name__ == "__main__":
                         help="Path to the role prompt file (optional)")
     parser.add_argument("--lora_output_dir", type=str, default="./lora-adapters", 
                         help="Directory to save the LoRA adapters")
-    parser.add_argument("--max_length", type=int, default=256, 
+    parser.add_argument("--hf_token", type=str, default=None,
+                        help="Hugging Face token for accessing gated models")
+    parser.add_argument("--max_length", type=int, default=256,
                         help="Maximum sequence length for tokenization")
     parser.add_argument("--batch_size", type=int, default=4, 
                         help="Training batch size")
