@@ -83,7 +83,7 @@ train: check-dataset
 
 # Merge LoRA with base model
 merge:
-	$(DOCKER_RUN) -e MODEL_NAME=$(MODEL_NAME) \
+	$(DOCKER_RUN) -e MODEL_NAME=$(MODEL_NAME) -e HF_TOKEN=$(HF_TOKEN) \
 	lora-rocm merge
 
 # Convert merged model to GGUF

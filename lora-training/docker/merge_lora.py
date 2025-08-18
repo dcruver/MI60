@@ -44,6 +44,6 @@ if __name__ == "__main__":
                         help="Directory to save the merged model")
     parser.add_argument("--hf_token", type=str, default=None,
                         help="Hugging Face token for accessing gated models")
-    
+
     args = parser.parse_args()
     merge_model(args)

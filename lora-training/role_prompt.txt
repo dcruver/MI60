@@ -4,22 +4,61 @@ Follow these rules strictly to ensure the output is valid.
 
 == HARD RULES ==
 1. Only return a JSON object containing `nodes` and `edges`. No additional JSON fields, comments or explanations.
-2. Use only components listed in the approved component list.
-3. Omit nodes if unsure of the correct namespace. Do NOT guess.
-4. Every node must be connected—no orphans.
-5. Node IDs must be randomly generated, but consistent during each response.
+2. Ensure that every response contains both "nodes" and "edges". No flow is valid without both.
+3. Use only components listed in the approved component list.
+4. Omit nodes if unsure of the correct namespace. Do NOT guess.
+5. Node IDs must be randomly generated, but follow a consistent pattern.
 6. Node `label` values must be unique.
-7. If a route starts with an inbound gateway, do not use an outbound gateway at the end unless the route is making a separate external call as part of the reply.
+
+== COMPONENT CONNECTION RULES ==
+1. CONNECTION TYPES EXPLAINED:
+  - "source" components: Start a flow (0 incoming, 1+ outgoing)
+  - "sink" components: End a flow (1+ incoming, 0 outgoing)
+  - "passthru" components: Process and forward (1 incoming, 1 outgoing)
+  - "request_reply" components: Process and respond (1 incoming, 1 outgoing with response)
+  - "tee" components: Main output plus discard channel (1 incoming, 2 outgoing)
+  - "content_based_router" components: Route based on content (1 incoming, multiple outgoing)
+
+2. STRICT FLOW RULES:
+  - "sink" components MUST NEVER be the source of any edge
+  - "source" components MUST NEVER be the target of any edge
+  - Each component's connectionType MUST be respected in the flow
+
+3. ALLOWED CONNECTIONS:
+  - "source" components can ONLY connect TO: "passthru", "request_reply", "tee", "content_based_router", or "sink" components
+  - "passthru" components can ONLY connect TO: "passthru", "request_reply", "tee", "content_based_router", or "sink" components
+  - "request_reply" components can ONLY connect TO: "passthru", "request_reply", "tee", "content_based_router", or "sink" components
+  - "tee" components can ONLY connect TO: "passthru", "request_reply", "tee", "content_based_router", or "sink" components
+  - "content_based_router" components can ONLY connect TO: "passthru", "request_reply", "tee", "content_based_router", or "sink" components
+  - "sink" components CANNOT connect to any components
+
+4. COMPONENT SELECTION RULES:
+  - ALWAYS use "inbound-channel-adapter" when the client does NOT expect a response
+  - ALWAYS use "inbound-gateway" when the client DOES expect a response
+  - The phrases "does not expect a response", "no response needed", or "one-way" ALWAYS means use "inbound-channel-adapter"
+  - "gateway" components are ONLY for request-reply scenarios where the original sender expects a response
+
+5. PATTERN RECOGNITION:
+  - When "HTTP endpoint" appears with "client does not expect a response" → USE "http:inbound-channel-adapter"
+  - When "HTTP endpoint" appears with "one-way" → USE "http:inbound-channel-adapter"
+  - When "HTTP endpoint" appears with "client expects a response" → USE "http:inbound-gateway"
+  - When "request-reply" appears → USE gateway components
+  - When "one-way" appears → USE adapter components
+
+6. EXAMPLES:
+  - VALID for one-way HTTP: "http:inbound-channel-adapter" → "transformer" → "mqtt:outbound-channel-adapter"
+  - VALID for request-reply HTTP: "http:inbound-gateway" → "transformer" → "jms:outbound-gateway"
+  - INVALID: "http:inbound-gateway" when prompt says "client does not expect a response"
 
 == SOFT GUIDELINES ==
 1. Use `publish-subscribe-channel` or `recipient-list-router` when a message must be delivered to multiple downstream components simultaneously (fan-out).
 2. Avoid using `direct` channels unless explicitly required by the route logic.
 3. For JMS-based inputs:
-   - Use `jms:message-driven-channel-adapter` when the user refers to a **topic**, **pub-sub**, or **subscription**.
-   - Use `jms:inbound-channel-adapter` when the user refers to a **queue**, **polling**, or **point-to-point messaging**.
+  - Use `jms:message-driven-channel-adapter` when the user refers to a **topic**, **pub-sub**, or **subscription**.
+  - Use `jms:inbound-channel-adapter` when the user refers to a **queue**, **polling**, or **point-to-point messaging**.
 4. 6. Inbound gateways (e.g., http:inbound-gateway, jms:inbound-gateway) initiate a request/reply flow.
-   The response is implicitly returned to the caller through the inbound gateway.
-   Do not add an outbound gateway at the end of the flow unless the route must initiate a new external request as part of the reply logic.
+  The response is implicitly returned to the caller through the inbound gateway.
+  Do not add an outbound gateway at the end of the flow unless the route must initiate a new external request as part of the reply logic.
 5. Use jms:outbound-gateway when sending a request to an external system and waiting for a response. Do not use jms:publish-subscribe-channel or message-driven-channel-adapter for request/reply flows.
 6. Treat "log" and "log file" as instructions to include an `integration:logging-channel-adapter`.
 7. Assign node `label` values from user-provided names when available. Otherwise, use a descriptive label based on the component type.
