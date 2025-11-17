@@ -43,6 +43,12 @@ support for the GPU.
 
 <img src="images/MI60-fan-housing1.jpg" alt="Fan Mount" width="500"/>
 
+Dual MI60 setup using a shared dual-duct housing. STL: https://www.thingiverse.com/thing:7203670 (fits two 92mm fans).
+
+<img src="images/MI60-dual-fan-housing1.jpg" alt="Dual MI60 duct - top view" width="500"/>
+<img src="images/MI60-dual-fan-housing2.jpg" alt="Dual MI60 duct - front view" width="500"/>
+<img src="images/MI60-dual-fan-housing3.jpg" alt="Dual MI60 duct - side view" width="500"/>
+
 ## 2. Hardware and Compatibility Checklist
 
 ### BIOS Settings Checklist
@@ -267,6 +273,5 @@ unresolved.
 - With ROCm 5.6, Linux, and some tuning, the MI60 remains usable for AI workloads.
 
 ---
-
 
 

@@ -14,6 +14,7 @@ PC:
 - System requirements and compatibility
 - Troubleshooting common issues
 - Performance optimization
+- Cooling guides for single- and dual-GPU setups, including a dual-duct STL: https://www.thingiverse.com/thing:7203670
 
 ### [LoRA Training](./lora-training/README.md)
 
