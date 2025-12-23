@@ -43,7 +43,7 @@ support for the GPU.
 
 <img src="images/MI60-fan-housing1.jpg" alt="Fan Mount" width="500"/>
 
-Dual MI60 setup using a shared dual-duct housing. STL: https://www.thingiverse.com/thing:7203670 (fits two 92mm fans).
+Dual MI60 setup using a shared dual-duct housing. STL: https://www.thingiverse.com/thing:7203670 (fits one 92mm or one 120mm fan to cool both GPUs).
 
 <img src="images/MI60-dual-fan-housing1.jpg" alt="Dual MI60 duct - top view" width="500"/>
 <img src="images/MI60-dual-fan-housing2.jpg" alt="Dual MI60 duct - front view" width="500"/>
