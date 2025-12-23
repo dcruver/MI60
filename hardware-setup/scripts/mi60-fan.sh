@@ -88,7 +88,7 @@ while true; do
     fi
 
     # Emergency bypass: skip rate limiting at high temps
-    if (( TEMP >= 85 )); then
+    if (( TEMP >= 80 )); then
         PWM=$(( MIN_PWM + (MAX_PWM - MIN_PWM) * (TEMP - MIN_TEMP) / (MAX_TEMP - MIN_TEMP) ))
     fi
 
@@ -101,5 +101,5 @@ while true; do
     # Log to stdout (journalctl)
     echo "GPU0: ${TEMP0}°C, Util: ${UTIL0}% | GPU1: ${TEMP1}°C, Util: ${UTIL1}% → Max Temp: ${TEMP}°C, Max Util: ${UTIL}% → PWM: ${PWM}"
 
-    sleep 3
+    sleep 2
 done
