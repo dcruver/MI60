@@ -7,20 +7,20 @@ Tools, guides, and workflows for the AMD Instinct MI60 GPU for AI training and i
 ### [Hardware Setup](./hardware-setup/README.md)
 Driver installation, system requirements, troubleshooting, and cooling guides for single- and dual-GPU setups. Includes a [dual-duct STL](https://www.thingiverse.com/thing:7203670).
 
-### [LoRA Training](./lora-training/README.md)
-Docker-based workflow for training LoRA adapters, merging with base models, and converting to GGUF format.
-
 ### [vLLM Inference](./vllm-inference.md)
 Production inference using vLLM with tensor parallelism. Covers why vLLM, ROCm compatibility, AWQ quantization, and the big-chat configuration example.
+
+### [ComfyUI](./comfyui.md)
+Stable Diffusion image generation with ROCm acceleration. Container setup, model installation, and troubleshooting.
+
+### [LoRA Training](./lora-training/README.md)
+Docker-based workflow for training LoRA adapters, merging with base models, and converting to GGUF format.
 
 ### [Configuration Management](./configuration-management.md)
 Dynamic switching between GPU configurations (big-chat, coder, etc.) via HTTP API. Includes state machine and API reference.
 
 ### [Metrics and Monitoring](./metrics-monitoring.md)
 Prometheus metrics, temperature alerts, and Grafana dashboard setup for GPU health monitoring.
-
-### [ComfyUI](./comfyui.md)
-Stable Diffusion image generation with ROCm acceleration. Container setup, model installation, and troubleshooting.
 
 ## Hardware Specifications
 
