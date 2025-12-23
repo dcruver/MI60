@@ -19,6 +19,9 @@ Dynamic switching between GPU configurations (big-chat, coder, etc.) via HTTP AP
 ### [Metrics and Monitoring](./metrics-monitoring.md)
 Prometheus metrics, temperature alerts, and Grafana dashboard setup for GPU health monitoring.
 
+### [ComfyUI](./comfyui.md)
+Stable Diffusion image generation with ROCm acceleration. Container setup, model installation, and troubleshooting.
+
 ## Hardware Specifications
 
 | Spec | Value |
