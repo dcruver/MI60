@@ -1,64 +1,55 @@
 # AMD MI60 GPU - Tools and Utilities
 
-This repository provides tools, guides, and workflows for working with the AMD Instinct MI60 GPU, a high-performance 
-compute GPU designed for AI training and inference workloads.
+Tools, guides, and workflows for the AMD Instinct MI60 GPU for AI training and inference workloads.
 
 ## Contents
 
 ### [Hardware Setup](./hardware-setup/README.md)
-
-Documentation of my experience with installing, configuring, and troubleshooting the AMD MI60 GPU hardware on a standard
-PC:
-
-- Driver installation and configuration
-- System requirements and compatibility
-- Troubleshooting common issues
-- Performance optimization
-- Cooling guides for single- and dual-GPU setups, including a dual-duct STL: https://www.thingiverse.com/thing:7203670
+Driver installation, system requirements, troubleshooting, and cooling guides for single- and dual-GPU setups. Includes a [dual-duct STL](https://www.thingiverse.com/thing:7203670).
 
 ### [LoRA Training](./lora-training/README.md)
+Docker-based workflow for training LoRA adapters, merging with base models, and converting to GGUF format.
 
-A Docker-based workflow for training LoRA (Low-Rank Adaptation) adapters for large language models on AMD GPUs:
+### [vLLM Inference](./vllm-inference.md)
+Production inference using vLLM with tensor parallelism. Covers why vLLM, ROCm compatibility, AWQ quantization, and the big-chat configuration example.
 
-- Train LoRA adapters for any Hugging Face model
-- Merge LoRA adapters with base models
-- Convert to GGUF format for efficient inference
-- Push models to Hugging Face repositories
+### [Configuration Management](./configuration-management.md)
+Dynamic switching between GPU configurations (big-chat, coder, etc.) via HTTP API. Includes state machine and API reference.
+
+### [Metrics and Monitoring](./metrics-monitoring.md)
+Prometheus metrics, temperature alerts, and Grafana dashboard setup for GPU health monitoring.
 
 ## Hardware Specifications
 
-The AMD Instinct MI60 GPU offers:
+| Spec | Value |
+|------|-------|
+| Memory | 32GB HBM2 per GPU (64GB total with dual) |
+| FP64 | 7.4 TFLOPS |
+| FP32 | 10.6 TFLOPS |
+| Interface | PCIe Gen4 |
+| Architecture | gfx906 (Vega 20) |
 
-- 32GB HBM2 (High-Bandwidth Memory)
-- Up to 7.4 TFLOPS FP64 performance
-- ROCm platform support
-- PCIe Gen4 interface
-- 10.6 TFLOPS FP32 performance
+## Quick Start
 
-## Getting Started
-
-1. Begin with the [Hardware Setup](./hardware-setup/README.md) guide to install and configure your MI60 GPU
-2. Once your hardware is properly configured, explore the [LoRA Training](./lora-training/README.md) workflow to 
-fine-tune language models
+1. Set up hardware per [Hardware Setup](./hardware-setup/README.md)
+2. Install ROCm 6.x and verify with `rocm-smi`
+3. Start the gpu-state-service: `python3 gpu-state-service.py`
+4. Switch to a configuration:
+   ```bash
+   curl -X POST -H "Content-Type: application/json" \
+     -d '{"config":"big-chat"}' http://localhost:9100/switch
+   ```
+5. Query the model at `http://localhost:8000` (OpenAI-compatible API)
 
 ## System Requirements
 
-- Linux operating system (Ubuntu 20.04/22.04 recommended)
-- ROCm-compatible kernel
-- Sufficient power supply (300W recommended)
-- Adequate cooling solution
-- At least 16GB system RAM (32GB+ recommended for ML workloads)
-
-## Contributing
-
-Contributions to improve documentation or add new tools are welcome! Please feel free to submit pull requests or open 
-issues with suggestions.
+- Linux (Ubuntu 22.04/24.04 recommended)
+- ROCm 6.x
+- 300W power per GPU
+- Adequate cooling ([see hardware-setup](./hardware-setup/README.md))
+- 32GB+ system RAM (64GB+ for dual-GPU)
+- containerd with nerdctl
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## Acknowledgments
-
-- AMD for creating the MI60 hardware and ROCm platform
-- The open-source community for providing valuable resources and tools
+MIT License - see LICENSE file.
