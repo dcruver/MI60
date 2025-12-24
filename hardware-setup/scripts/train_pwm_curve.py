@@ -1,6 +1,32 @@
 #!/usr/bin/env python3
 """
-Learn a monotonic utilization → PWM curve from historical data.
+Build a Utilization → PWM Curve from Historical Fan Control Data.
+
+This script analyzes the CSV log from gpu-fan-control to determine what PWM values
+actually kept temperatures safe at each GPU utilization level. The output is a
+monotonic curve that can be pasted into ml-fan-control.py.
+
+METHODOLOGY:
+1. Load all samples from /var/log/gpu-fan-control.csv
+2. Filter to "safe" samples where max_temp <= TARGET_TEMP
+3. For each 10% utilization bucket, find the median PWM of safe samples
+4. Enforce monotonicity: higher utilization never gets lower PWM
+5. Output the curve in a format ready for ml-fan-control.py
+
+WHY THIS WORKS:
+Traditional ML approaches (predicting temperature from features) failed because they
+learned correlation, not causation. High PWM correlated with high temps in our data
+because the old reactive controller only went to max PWM AFTER temps spiked.
+
+This approach sidesteps that problem: we don't predict anything. We just ask
+"what PWM values actually worked?" and use those directly.
+
+USAGE:
+    python train_pwm_curve.py
+
+After running, copy the UTIL_PWM_POINTS output into ml-fan-control.py and restart
+the service. You should do this after collecting several weeks of operational data
+with your specific cooling setup.
 """
 
 import pandas as pd

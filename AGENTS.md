@@ -150,24 +150,40 @@ Currently runs on CPU. GPU acceleration requires nvidia-container-toolkit for th
 
 ## Cooling & Fan Control (Dual MI60)
 
-Two fan control options are available:
+**Critical for GPU longevity**: The MI60 is passive-cooled and will spike to 95-100°C under load without
+proper cooling. The data-driven controller described here reduces junction temps from 96-97°C to 80°C,
+significantly extending the operational life of these GPUs.
 
-### ML-Based Controller (Recommended)
+### Data-Driven Controller (Recommended)
+
+Unlike reactive temperature-based control (which always plays catch-up), this controller is **preemptive**:
+it ramps the fan based on GPU utilization before temperatures have time to rise.
+
+**Key Features:**
 - Installed at `/opt/gpu-fan-control/` via `install-ml-fan-control.sh`
-- Uses gradient boosting model (`fan_model.pkl`) trained on historical temp/util data
-- Predicts temperature 20s ahead and selects minimum PWM to stay below `TARGET_TEMP` (82°C)
-- Adaptive polling: 0.5s at ≥90% util, 1s at ≥50%, 2s at idle
-- Retrain with `train_fan_model_v2.py` after collecting more data
-- Tunables in `ml-fan-control.py`: `TARGET_TEMP`, `MAX_TEMP`, `MIN_PWM`, `MAX_PWM`
+- Uses a utilization→PWM curve learned from 300k+ historical samples
+- Preemptive control: fan leads temperature changes instead of chasing them
+- Adaptive polling: 0.5s at ≥90% util, 1s otherwise
+- Linear interpolation for smooth fan response
+- Temperature monitoring as safety backstop
+
+**Results:**
+- Junction temps: **80°C max** (was 96-97°C with reactive control)
+- Fan behavior: Smooth curves, maxes at ~88% instead of spiking to 100%
+
+**Tunables** in `ml-fan-control.py`:
+- `TARGET_TEMP` (82°C): Desired operating temperature
+- `MAX_TEMP` (92°C): Emergency threshold
+- `UTIL_PWM_POINTS`: The learned curve (rebuild with `train_pwm_curve.py`)
 
 ### Simple Bash Script (Fallback)
 - Source in `hardware-setup/scripts/mi60-fan.sh`, auto-detects `nct6798`
-- Utilization-based control without ML dependencies
-- Tunables: `MIN_PWM`, `MAX_PWM`, `MIN_TEMP`, `MAX_TEMP`, `UTIL_HIGH`, `UTIL_MEDIUM`, `UTIL_LOW`
+- Basic utilization-based control without Python dependencies
+- Use if Python isn't available; expect higher temps
 
 ### General Notes
-- Keep hwmon discovery dynamic; change `PWM_PATH` only if the controller differs.
-- Logs to `/var/log/gpu-fan-control.csv` (CSV format for analysis/retraining)
+- Logs to `/var/log/gpu-fan-control.csv` (CSV format for curve analysis)
+- Rebuild curve after collecting your own data: `train_pwm_curve.py`
 - Dual-duct STL: `https://www.thingiverse.com/thing:7203670`
 - Dual-duct photos: `hardware-setup/images/MI60-dual-fan-housing{1,2,3}.jpg`
 

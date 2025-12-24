@@ -121,28 +121,54 @@ To ensure the MI60 initializes properly and operates with maximum stability, adj
 
 ## 5. Cooling and Fan Control Setup
 
+### Why This Matters: GPU Longevity
+
+The MI60 is a passive-cooled server GPU designed for data center airflow. Without proper cooling, junction
+temperatures can spike to 95-100°C during inference workloads. Running GPUs at these temperatures dramatically
+shortens their lifespan - thermal cycling stresses solder joints, degrades HBM2 memory, and accelerates
+electromigration in the die.
+
+**The solution described here reduces junction temperatures from 96-97°C to 80°C** - a 16-17°C improvement that
+significantly extends the operational life of your MI60 investment.
+
 ### Physical Setup
 
-- Mount a 92mm x 38mm fan (e.g., GDSTIME) directly onto the MI60 heatsink using a 3D printed bracket.
-- Connect the fan to:
-    - Motherboard CHA\_FAN or SYS\_FAN header
-    - Or use an external powered fan hub
+- Mount a 92mm x 38mm fan (e.g., GDSTIME) directly onto the MI60 heatsink using a 3D printed bracket
+- For dual MI60 setups, use the shared dual-duct housing: https://www.thingiverse.com/thing:7203670
+- Connect the fan to a motherboard CHA\_FAN or SYS\_FAN header with PWM control
 
 ### Software Fan Control
 
-Two fan control options are available: a simple bash script or an ML-based controller.
+Two fan control options are available. The data-driven controller is strongly recommended.
 
-#### Option 1: ML-Based Fan Controller (Recommended)
+#### Option 1: Data-Driven Fan Controller (Recommended)
 
-The [ML fan controller](scripts/ml-fan-control.py) uses a gradient boosting model trained on historical
-temperature/utilization data to predict optimal fan speeds. It selects the minimum PWM that keeps predicted
-temperature below the target, resulting in quieter operation while maintaining safe temps.
+The [fan controller](scripts/ml-fan-control.py) uses a **preemptive, utilization-based approach** rather than
+reactive temperature control. The key insight: by the time temperature spikes, it's already too late - the
+thermal mass of the GPU means you're always playing catch-up.
 
-**Features:**
-- Predicts temperature 20 seconds ahead
-- Adaptive polling (0.5s at high load, 2s at idle)
-- Rate-limited PWM changes to prevent audible spikes
-- Emergency override at high temps
+Instead, this controller uses a utilization→PWM curve learned from analyzing 300,000+ historical samples.
+It answers the question: "At each utilization level, what PWM value actually kept temperatures safe?"
+
+**How It Works:**
+
+1. **Preemptive Control**: Fan speed is based on GPU utilization, not temperature. When utilization jumps
+   from 0% to 100%, the fan ramps up *immediately* - before the temperature has time to rise.
+
+2. **Learned Curve**: The PWM values aren't guessed - they're derived from real operational data:
+   - 0-20% utilization → PWM 110-126 (quiet)
+   - 30-50% utilization → PWM 189-207 (moderate)
+   - 60-100% utilization → PWM 211-225 (full cooling)
+
+3. **Smooth Interpolation**: Linear interpolation between points prevents jarring fan speed changes.
+
+4. **Safety Backstop**: Temperature is still monitored as a safety net. If temps exceed the target despite
+   the utilization curve, the controller increases PWM further.
+
+**Results:**
+- Junction temperatures: **80°C max** (down from 96-97°C)
+- Fan behavior: Smooth curves maxing at ~88% (no more 100% spikes)
+- Response time: Fan leads temperature changes instead of chasing them
 
 **Installation:**
 
@@ -151,22 +177,29 @@ cd /path/to/hardware-setup/scripts
 sudo bash install-ml-fan-control.sh
 ```
 
-**Configuration** (edit `ml-fan-control.py`):
+**Configuration** (edit `/opt/gpu-fan-control/ml-fan-control.py`):
 - `TARGET_TEMP`: Target temperature (default: 82°C)
 - `MAX_TEMP`: Emergency threshold (default: 92°C)
-- `MIN_PWM` / `MAX_PWM`: Fan PWM range
+- `UTIL_PWM_POINTS`: The learned utilization→PWM curve
+- `POLL_INTERVAL_CRITICAL` / `POLL_INTERVAL_NORMAL`: Polling rates
 
-**Retraining the model** (after collecting more data):
+**Building Your Own Curve** (after collecting operational data):
+
+The included `train_pwm_curve.py` script analyzes your log data to build a custom curve:
+
 ```bash
 cd /opt/gpu-fan-control
-sudo .venv/bin/python train_fan_model_v2.py
+sudo .venv/bin/python train_pwm_curve.py
+# Copy the output UTIL_PWM_POINTS into ml-fan-control.py
 sudo systemctl restart gpu-fan-control.service
 ```
 
-#### Option 2: Simple Bash Script
+This is useful if your cooling setup differs (different fan, ambient temperature, etc.).
 
-The [bash script](scripts/mi60-fan.sh) provides utilization-based fan control without ML dependencies.
-Good as a starting point or fallback.
+#### Option 2: Simple Bash Script (Fallback)
+
+The [bash script](scripts/mi60-fan.sh) provides basic utilization-based fan control without Python dependencies.
+Use this as a fallback if you can't run Python, but expect higher temperatures.
 
 **Installation:**
 
@@ -178,9 +211,9 @@ sudo systemctl daemon-reload
 sudo systemctl enable --now gpu-fan-control.service
 ```
 
-Adjust `PWM_PATH` and `PWM_ENABLE_PATH` for your motherboard. Use `sensors` to identify the correct hwmon path.
-
 #### Finding Your hwmon Path
+
+Both scripts auto-detect the `nct6798` controller. If you have a different controller:
 
 1. Install `lm-sensors`:
    ```bash
@@ -193,7 +226,7 @@ Adjust `PWM_PATH` and `PWM_ENABLE_PATH` for your motherboard. Use `sensors` to i
    for h in /sys/class/hwmon/hwmon*; do echo "$h: $(cat $h/name)"; done
    ```
 
-3. Update the script's `PWM_PATH` to match your controller (e.g., `nct6798`)
+3. Update the `find_hwmon_path()` function to match your controller
 
 > **Tip**: If your motherboard does not expose fine PWM controls, set a BIOS fan curve instead.
 
