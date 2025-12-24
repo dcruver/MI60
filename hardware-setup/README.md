@@ -130,72 +130,70 @@ To ensure the MI60 initializes properly and operates with maximum stability, adj
 
 ### Software Fan Control
 
-You can automate fan behavior using a custom script and systemd service.
+Two fan control options are available: a simple bash script or an ML-based controller.
 
-#### Example Fan Control Script
-[This](scripts/mi60-fan.sh) is the fan control script that I'm using. Depending on your motherboard and which fan control header you're 
-using, you may need to modify the value of PWM_PATH and PWM_ENABLE_PATH. Further, depending on the output of your 
-particular fan, you may want to change the values for MIN_PWM, MAX_PWM, MIN_TEMP, MAX_TEMP, UTIL_THRESH and/or 
-BOOST_PWM. The values in the script should work reasonably well as a starting point.
+#### Option 1: ML-Based Fan Controller (Recommended)
 
-Save the script at `/usr/local/bin/mi60-fan.sh`
+The [ML fan controller](scripts/ml-fan-control.py) uses a gradient boosting model trained on historical
+temperature/utilization data to predict optimal fan speeds. It selects the minimum PWM that keeps predicted
+temperature below the target, resulting in quieter operation while maintaining safe temps.
 
-Make it executable:
+**Features:**
+- Predicts temperature 20 seconds ahead
+- Adaptive polling (0.5s at high load, 2s at idle)
+- Rate-limited PWM changes to prevent audible spikes
+- Emergency override at high temps
+
+**Installation:**
 
 ```bash
+cd /path/to/hardware-setup/scripts
+sudo bash install-ml-fan-control.sh
+```
+
+**Configuration** (edit `ml-fan-control.py`):
+- `TARGET_TEMP`: Target temperature (default: 82°C)
+- `MAX_TEMP`: Emergency threshold (default: 92°C)
+- `MIN_PWM` / `MAX_PWM`: Fan PWM range
+
+**Retraining the model** (after collecting more data):
+```bash
+cd /opt/gpu-fan-control
+sudo .venv/bin/python train_fan_model_v2.py
+sudo systemctl restart gpu-fan-control.service
+```
+
+#### Option 2: Simple Bash Script
+
+The [bash script](scripts/mi60-fan.sh) provides utilization-based fan control without ML dependencies.
+Good as a starting point or fallback.
+
+**Installation:**
+
+```bash
+sudo cp scripts/mi60-fan.sh /usr/local/bin/
 sudo chmod +x /usr/local/bin/mi60-fan.sh
+sudo cp scripts/mi60-fan.service /etc/systemd/system/gpu-fan-control.service
+sudo systemctl daemon-reload
+sudo systemctl enable --now gpu-fan-control.service
 ```
 
-#### Create a systemd Service
+Adjust `PWM_PATH` and `PWM_ENABLE_PATH` for your motherboard. Use `sensors` to identify the correct hwmon path.
 
-Create [mi60-fan.service](scripts/mi60-fan.service) in `/etc/systemd/system/`
+#### Finding Your hwmon Path
 
-Enable and start the service:
-
-```bash
-sudo systemctl daemon-reexec
-sudo systemctl enable --now mi60-fan.service
-```
-
-> **Note**: Use `sensors` to identify the correct `hwmon` path for your system and adjust `FAN_PATH` and `TEMP_PATH` 
-accordingly.
-
-1. Install `lm-sensors` and `fancontrol`:
-
+1. Install `lm-sensors`:
    ```bash
-   sudo apt install lm-sensors fancontrol
+   sudo apt install lm-sensors
+   sudo sensors-detect  # Answer "yes" to prompts
    ```
 
-2. Detect all available sensors:
-
+2. Find your fan controller:
    ```bash
-   sudo sensors-detect
+   for h in /sys/class/hwmon/hwmon*; do echo "$h: $(cat $h/name)"; done
    ```
 
-    - Answer "yes" to all prompts.
-
-3. View sensor output:
-
-   ```bash
-   sensors
-   ```
-
-    - Identify the relevant temperature inputs (usually motherboard CPU or system temp).
-
-4. Configure PWM fan control:
-
-   ```bash
-   sudo pwmconfig
-   ```
-
-    - Follow the prompts to associate PWM outputs with temperature inputs.
-
-5. Enable fancontrol service:
-
-   ```bash
-   sudo systemctl enable fancontrol
-   sudo systemctl start fancontrol
-   ```
+3. Update the script's `PWM_PATH` to match your controller (e.g., `nct6798`)
 
 > **Tip**: If your motherboard does not expose fine PWM controls, set a BIOS fan curve instead.
 

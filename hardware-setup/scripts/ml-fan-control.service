@@ -1,0 +1,13 @@
+[Unit]
+Description=GPU Fan Control Service
+After=multi-user.target
+
+[Service]
+ExecStart=/opt/gpu-fan-control/.venv/bin/python /opt/gpu-fan-control/ml-fan-control.py
+Restart=always
+RestartSec=5
+StartLimitIntervalSec=0
+User=root
+
+[Install]
+WantedBy=multi-user.target

@@ -150,10 +150,26 @@ Currently runs on CPU. GPU acceleration requires nvidia-container-toolkit for th
 
 ## Cooling & Fan Control (Dual MI60)
 
-- Fan control script at `/usr/local/bin/mi60-fan.sh` (source in `hardware-setup/scripts/mi60-fan.sh`) auto-detects `nct6798`, reads both GPU temps/utils via `rocm-smi`, and drives `pwm3` in manual mode.
-- Tunables: `MIN_PWM=100`, `MAX_PWM=255`, `MIN_TEMP=30`, `MAX_TEMP=80`, `UTIL_THRESH=80`, `BOOST_PWM=200`. Adjust for new ducts or fans; logs show live temps/utils/PWM.
+Two fan control options are available:
+
+### ML-Based Controller (Recommended)
+- Installed at `/opt/gpu-fan-control/` via `install-ml-fan-control.sh`
+- Uses gradient boosting model (`fan_model.pkl`) trained on historical temp/util data
+- Predicts temperature 20s ahead and selects minimum PWM to stay below `TARGET_TEMP` (82°C)
+- Adaptive polling: 0.5s at ≥90% util, 1s at ≥50%, 2s at idle
+- Retrain with `train_fan_model_v2.py` after collecting more data
+- Tunables in `ml-fan-control.py`: `TARGET_TEMP`, `MAX_TEMP`, `MIN_PWM`, `MAX_PWM`
+
+### Simple Bash Script (Fallback)
+- Source in `hardware-setup/scripts/mi60-fan.sh`, auto-detects `nct6798`
+- Utilization-based control without ML dependencies
+- Tunables: `MIN_PWM`, `MAX_PWM`, `MIN_TEMP`, `MAX_TEMP`, `UTIL_HIGH`, `UTIL_MEDIUM`, `UTIL_LOW`
+
+### General Notes
 - Keep hwmon discovery dynamic; change `PWM_PATH` only if the controller differs.
-- Maintain single- and dual-GPU docs: keep single-GPU notes in `hardware-setup/`; cross-link dual duct instructions and the STL (`https://www.thingiverse.com/thing:7203670`) from both. Dual-duct photos: `hardware-setup/images/MI60-dual-fan-housing{1,2,3}.jpg`.
+- Logs to `/var/log/gpu-fan-control.csv` (CSV format for analysis/retraining)
+- Dual-duct STL: `https://www.thingiverse.com/thing:7203670`
+- Dual-duct photos: `hardware-setup/images/MI60-dual-fan-housing{1,2,3}.jpg`
 
 ## Coding Style & Naming Conventions
 

@@ -1,1 +1,6 @@
 .idea/
+
+# ML fan control
+hardware-setup/scripts/.venv/
+hardware-setup/scripts/fan_model.pkl
+hardware-setup/scripts/__pycache__/
