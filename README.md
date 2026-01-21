@@ -1,58 +1,46 @@
 # AMD MI60 GPU - Tools and Utilities
 
-Tools, guides, and workflows for the AMD Instinct MI60 GPU for AI training and inference workloads.
+Scripts and resources for running AI workloads on AMD Instinct MI60 GPUs.
 
-## Contents
+## Documentation
 
-### [Hardware Setup](./hardware-setup/README.md)
-Driver installation, system requirements, troubleshooting, and cooling guides for single- and dual-GPU setups. Includes a [dual-duct STL](https://www.thingiverse.com/thing:7203670).
+**Full documentation is available at [cruver.ai/gpu-ai/](https://cruver.ai/gpu-ai/)**
 
-### [vLLM Inference](./vllm-inference.md)
-Production inference using vLLM with tensor parallelism. Covers why vLLM, ROCm compatibility, AWQ quantization, and the big-chat configuration example.
+- [Hardware Setup & Cooling](https://cruver.ai/gpu-ai/posts/mi60-hardware-setup/) - BIOS settings, fan control, 3D-printed shrouds
+- [vLLM Inference](https://cruver.ai/gpu-ai/posts/vllm-inference-mi60/) - Tensor parallelism, AWQ quantization, 70B models
+- [ComfyUI Setup](https://cruver.ai/gpu-ai/posts/comfyui-mi60/) - Stable Diffusion with ROCm
+- [Configuration Management](https://cruver.ai/gpu-ai/posts/gpu-config-management/) - Dynamic switching between workloads
+- [Metrics & Monitoring](https://cruver.ai/gpu-ai/posts/gpu-metrics-monitoring/) - Prometheus, Grafana, temperature alerts
 
-### [ComfyUI](./comfyui.md)
-Stable Diffusion image generation with ROCm acceleration. Container setup, model installation, and troubleshooting.
+## 3D Printable Fan Shrouds
 
-### [LoRA Training](./lora-training/README.md)
-Docker-based workflow for training LoRA adapters, merging with base models, and converting to GGUF format.
+- **Single GPU:** [Thingiverse](https://www.thingiverse.com/thing:6636428)
+- **Dual GPU:** [Thingiverse](https://www.thingiverse.com/thing:7203670)
 
-### [Configuration Management](./configuration-management.md)
-Dynamic switching between GPU configurations (big-chat, coder, etc.) via HTTP API. Includes state machine and API reference.
+## Repository Contents
 
-### [Metrics and Monitoring](./metrics-monitoring.md)
-Prometheus metrics, temperature alerts, and Grafana dashboard setup for GPU health monitoring.
+### `/hardware-setup/scripts/`
+Fan control scripts for temperature management:
+- `ml-fan-control.py` - Data-driven fan controller with learned utilization→PWM curve
+- `mi60-fan.sh` - Simple bash fallback
+- `install-ml-fan-control.sh` - Systemd service installation
+- `benchmark_ollama.sh` - Token generation benchmarking
 
-## Hardware Specifications
+### `/hardware-setup/images/`
+Photos of fan housing setups.
+
+### `/lora-training/`
+Docker-based workflow for training LoRA adapters.
+
+## Hardware Specs
 
 | Spec | Value |
 |------|-------|
-| Memory | 32GB HBM2 per GPU (64GB total with dual) |
-| FP64 | 7.4 TFLOPS |
-| FP32 | 10.6 TFLOPS |
-| Interface | PCIe Gen4 |
+| Memory | 32GB HBM2 per GPU |
 | Architecture | gfx906 (Vega 20) |
-
-## Quick Start
-
-1. Set up hardware per [Hardware Setup](./hardware-setup/README.md)
-2. Install ROCm 6.x and verify with `rocm-smi`
-3. Start the gpu-state-service: `python3 gpu-state-service.py`
-4. Switch to a configuration:
-   ```bash
-   curl -X POST -H "Content-Type: application/json" \
-     -d '{"config":"big-chat"}' http://localhost:9100/switch
-   ```
-5. Query the model at `http://localhost:8000` (OpenAI-compatible API)
-
-## System Requirements
-
-- Linux (Ubuntu 22.04/24.04 recommended)
-- ROCm 6.x
-- 300W power per GPU
-- Adequate cooling ([see hardware-setup](./hardware-setup/README.md))
-- 32GB+ system RAM (64GB+ for dual-GPU)
-- containerd with nerdctl
+| TDP | 300W |
+| Interface | PCIe Gen3 |
 
 ## License
 
-MIT License - see LICENSE file.
+MIT License
